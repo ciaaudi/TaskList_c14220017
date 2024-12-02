@@ -2,6 +2,7 @@ package com.example.tasklist_c14220017
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.Button
 import androidx.activity.enableEdgeToEdge
@@ -20,6 +21,9 @@ class MainActivity : AppCompatActivity() {
     private var arListTask = arrayListOf<listTask>()
     private lateinit var _rvListTask: RecyclerView
     private lateinit var taskAdapter: TaskAdapter
+
+    internal lateinit var sharedPreferences: SharedPreferences
+    private lateinit var editor: SharedPreferences.Editor
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +44,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this@MainActivity, addTask::class.java)
             startActivityForResult(intent, REQUEST_CODE_ADD_TASK)
         }
+
+        sharedPreferences = getSharedPreferences("task", MODE_PRIVATE)
+        editor = sharedPreferences.edit()
+
+        loadTasksFromPreferences()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -59,23 +68,52 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun addTask(nama: String, tanggal: String, deskripsi: String) {
-        _nama.add(nama)
-        _tanggal.add(tanggal)
-        _deskripsi.add(deskripsi)
-        arListTask.add(listTask(nama, tanggal, deskripsi))
+        val task = listTask(nama, tanggal, deskripsi)
+        arListTask.add(task)
         taskAdapter.notifyDataSetChanged()
     }
 
     fun updateTask(position: Int, nama: String, tanggal: String, deskripsi: String) {
-        arListTask[position].nama = nama
-        arListTask[position].tanggal = tanggal
-        arListTask[position].deskripsi = deskripsi
+        val task = arListTask[position]
+        removeTaskFromPreferences(task)
+        task.nama = nama
+        task.tanggal = tanggal
+        task.deskripsi = deskripsi
+        saveTaskToPreferences(task)
         taskAdapter.notifyDataSetChanged()
     }
 
     fun deleteTask(position: Int) {
-        arListTask.removeAt(position)
-        taskAdapter.notifyItemRemoved(position)
+        if (position >= 0 && position < arListTask.size) {
+            val task = arListTask[position]
+            arListTask.removeAt(position)
+            taskAdapter.notifyItemRemoved(position)
+            removeTaskFromPreferences(task)
+        }
+    }
+
+    fun saveTaskToPreferences(task: listTask) {
+        val taskSet = sharedPreferences.getStringSet("task", mutableSetOf())?.toMutableSet()
+        taskSet?.add("${task.nama},${task.tanggal},${task.deskripsi}")
+        editor.putStringSet("task", taskSet)
+        editor.apply()
+    }
+
+    fun removeTaskFromPreferences(task: listTask) {
+        val taskSet = sharedPreferences.getStringSet("task", mutableSetOf())?.toMutableSet()
+        taskSet?.remove("${task.nama},${task.tanggal},${task.deskripsi}")
+        editor.putStringSet("task", taskSet)
+        editor.apply()
+    }
+
+    private fun loadTasksFromPreferences() {
+        val taskSet = sharedPreferences.getStringSet("task", mutableSetOf())
+        taskSet?.forEach { taskString ->
+            val taskData = taskString.split(",")
+            val task = listTask(taskData[0], taskData[1], taskData[2])
+            arListTask.add(task)
+        }
+        taskAdapter.notifyDataSetChanged()
     }
 
     companion object {

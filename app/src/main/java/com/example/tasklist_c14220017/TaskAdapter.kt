@@ -1,6 +1,7 @@
 package com.example.tasklist_c14220017
 
 import android.content.Intent
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,8 @@ class TaskAdapter(private val taskList: List<listTask>, private val activity: Ma
         val btnStart: Button = itemView.findViewById(R.id.btn_start)
         val btnEdit: Button = itemView.findViewById(R.id.btn_edit)
         val btnHapus: Button = itemView.findViewById(R.id.btn_hapus)
+        val btnSave: Button = itemView.findViewById(R.id.btn_save)
+
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
@@ -32,6 +35,11 @@ class TaskAdapter(private val taskList: List<listTask>, private val activity: Ma
         holder.tanggalTextView.text = currentItem.tanggal
         holder.deskripsiTextView.text = currentItem.deskripsi
 
+        val taskString = "${currentItem.nama},${currentItem.tanggal},${currentItem.deskripsi}"
+        val taskSet = activity.sharedPreferences.getStringSet("task", mutableSetOf())
+        if (taskSet?.contains(taskString) == true) {
+            holder.btnSave.setBackgroundColor(Color.DKGRAY)
+        }
 
         holder.btnStart.setOnClickListener {
             if (holder.btnStart.text == "Start") {
@@ -51,7 +59,11 @@ class TaskAdapter(private val taskList: List<listTask>, private val activity: Ma
         }
         holder.btnHapus.setOnClickListener {
             activity.deleteTask(position)
+            activity.removeTaskFromPreferences(currentItem)
         }
-
+        holder.btnSave.setOnClickListener {
+            activity.saveTaskToPreferences(currentItem)
+            holder.btnSave.setBackgroundColor(Color.DKGRAY)
+        }
     }
 }
